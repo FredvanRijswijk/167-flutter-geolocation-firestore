@@ -34,7 +34,7 @@ class FireMapState extends State<FireMap> {
   Geoflutterfire geo = Geoflutterfire();
 
   // Stateful Data
-  BehaviorSubject<double> radius = BehaviorSubject(seedValue: 100.0);
+  BehaviorSubject<double> radius = BehaviorSubject.seeded(100.0);
   Stream<dynamic> query;
 
   // Subscription
@@ -52,7 +52,7 @@ class FireMapState extends State<FireMap> {
           myLocationEnabled: true,
           mapType: MapType.hybrid, 
           compassEnabled: true,
-          trackCameraPosition: true,
+          // trackCameraPosition: true,
       ),
      Positioned(
           bottom: 50,
@@ -89,21 +89,22 @@ class FireMapState extends State<FireMap> {
     });
   }
 
-  _addMarker() {
-    var marker = MarkerOptions(
-      position: mapController.cameraPosition.target,
-      icon: BitmapDescriptor.defaultMarker,
-      infoWindowText: InfoWindowText('Magic Marker', '🍄🍄🍄')
-    );
+  // _addMarker() {
+  //   var marker = Marker(
+  //     markerId: MarkerId('33'),
+  //     position: LatLng(.),
+  //     icon: BitmapDescriptor.defaultMarker,
+  //     infoWindow: InfoWindow(title: 'Magic Marker', snippet: '🍄🍄🍄')
+  //   );
 
-    mapController.addMarker(marker);
-  }
+  //   mapController.addMarker(marker);
+  // }
 
   _animateToUser() async {
     var pos = await location.getLocation();
     mapController.animateCamera(CameraUpdate.newCameraPosition(
       CameraPosition(
-          target: LatLng(pos['latitude'], pos['longitude']),
+          target: LatLng(pos.latitude, pos.longitude),
           zoom: 17.0,
         )
       )
@@ -113,7 +114,7 @@ class FireMapState extends State<FireMap> {
   // Set GeoLocation Data
   Future<DocumentReference> _addGeoPoint() async {
     var pos = await location.getLocation();
-    GeoFirePoint point = geo.point(latitude: pos['latitude'], longitude: pos['longitude']);
+    GeoFirePoint point = geo.point(latitude: pos.latitude, longitude: pos.longitude);
     return firestore.collection('locations').add({ 
       'position': point.data,
       'name': 'Yay I can be queried!' 
@@ -122,26 +123,28 @@ class FireMapState extends State<FireMap> {
 
   void _updateMarkers(List<DocumentSnapshot> documentList) {
     print(documentList);
-    mapController.clearMarkers();
+    mapController.getVisibleRegion();
     documentList.forEach((DocumentSnapshot document) {
         GeoPoint pos = document.data['position']['geopoint'];
         double distance = document.data['distance'];
-        var marker = MarkerOptions(
+        var marker = Marker(
+          markerId: MarkerId(document.documentID),
           position: LatLng(pos.latitude, pos.longitude),
           icon: BitmapDescriptor.defaultMarker,
-          infoWindowText: InfoWindowText('Magic Marker', '$distance kilometers from query center')
+          infoWindow: InfoWindow(title: 'Magic Marker', snippet: '$distance kilometers from query center')
         );
 
 
-        mapController.addMarker(marker);
+
+        // mapController.addMarker(marker);
     });
   }
 
   _startQuery() async {
     // Get users location
     var pos = await location.getLocation();
-    double lat = pos['latitude'];
-    double lng = pos['longitude'];
+    double lat = pos.latitude;
+    double lng = pos.longitude;
 
 
     // Make a referece to firestore
@@ -180,6 +183,5 @@ class FireMapState extends State<FireMap> {
     subscription.cancel();
     super.dispose();
   }
-
-
+  
 }
